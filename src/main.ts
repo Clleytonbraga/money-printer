@@ -153,4 +153,14 @@ async function main(): Promise<void> {
   loop();
 }
 
-void main();
+// Without WebGL (old device, or the browser turned it off after a GPU crash)
+// nothing can be drawn. Show the room and say why, instead of a blank page.
+main().catch((err) => {
+  console.error(err);
+  document.getElementById('app')!.innerHTML = `
+    <img class="nogl-photo" src="${CONFIG.photo.src}" alt="">
+    <div class="overlay"><div class="card" role="alert">
+      <h1>The printer can't start.</h1>
+      <p class="lead">This browser has 3D graphics (WebGL) turned off. Close the browser completely and open it again, or try another browser.</p>
+    </div></div>`;
+});
