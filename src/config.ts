@@ -71,6 +71,20 @@ export const CONFIG = {
     /** How much of the bill's own paper is laid back over the portrait. */
     paper: 0.2,
   },
+  /** The last bills printed stay easy to reach: in view, on top, flat, first to be picked. */
+  fresh: {
+    count: 8,
+    /** How far above the pile surface a fresh bill rests (m). */
+    lift: 0.01,
+    /** Fresh bills stay almost flat; they crumple like the rest when they stop being fresh. */
+    crumple: 0.12,
+    /** Tap radius around a fresh bill's centre (CSS px). */
+    pickPx: 30,
+    /** A bill that landed out of sight slides toward the camera in steps of this (m)... */
+    slideStep: 0.04,
+    /** ...and takes about this long to get there (s). */
+    slideTime: 0.35,
+  },
   /** Playing with the bills: tap opens, drag spreads, press-and-hold grabs. */
   touch: {
     /** A press shorter than this (ms) that moved less than tapPx is a tap. */

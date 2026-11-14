@@ -9,6 +9,8 @@ import type { Stage } from './stage';
 
 const _pt = new THREE.Vector3();
 const _vel = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _s = new THREE.Vector3();
 const _front = new THREE.Vector3(0, 0, 1);
 
 export interface WorldEvents {
@@ -40,6 +42,8 @@ export class World {
   private readonly hand = new THREE.Vector3();
   private readonly sweepAt = new THREE.Vector3();
   private sweepTime = 0;
+  /** The last CONFIG.fresh.count bills printed, oldest first. */
+  private readonly fresh: BillRecord[] = [];
 
   constructor(private readonly stage: Stage, private readonly events: WorldEvents = {}) {}
 
@@ -71,7 +75,7 @@ export class World {
       const job = this.queue.shift()!;
       const batch = (job.photoKey && this.photoBatches.get(job.photoKey)) || this.plain;
       if (batch.full) this.retire(batch);
-      const rec = batch.add({ id: job.id, gold: job.gold, owner: job.owner, body: new BillBody() });
+      const rec = batch.add({ id: job.id, gold: job.gold, owner: job.owner, body: new BillBody(), fresh: true });
       this.live.push(rec);
       this.printing = rec;
       this.events.onPrintStart?.();
@@ -92,8 +96,9 @@ export class World {
       rec.batch.write(rec);
       if (slept) {
         this.live.splice(i, 1);
-        this.pileAdd(rec, CONFIG.pile.thickness);
         this.settled.push(rec);
+        if (rec.fresh) this.keepFresh(rec);
+        else this.pileAdd(rec, CONFIG.pile.thickness);
       }
     }
     // Asleep bills still finish their crumple; cheap, and only the recent ones.
@@ -104,6 +109,7 @@ export class World {
         r.batch.write(r);
       }
     }
+    this.seatFresh(dt);
     this.plain.flush();
     for (const b of this.photoBatches.values()) b.flush();
     this.pile.update();
@@ -111,7 +117,7 @@ export class World {
 
   /** Oldest settled bill of this batch becomes part of the pile surface. */
   private retire(batch: BillBatch): void {
-    const i = this.settled.findIndex((r) => r.batch === batch);
+    const i = this.settled.findIndex((r) => r.batch === batch && !r.fresh);
     if (i < 0) return;
     const [r] = this.settled.splice(i, 1);
     batch.remove(r);
@@ -119,6 +125,17 @@ export class World {
 
   /** Bill under the pointer, if any. */
   pick(ndc: THREE.Vector2): BillRecord | null {
+    // Fresh bills first, with a generous tap area around their centre.
+    const el = this.stage.renderer.domElement;
+    let best: BillRecord | null = null;
+    let bestD = CONFIG.fresh.pickPx;
+    for (const rec of this.fresh) {
+      if (rec.body.mode !== 'asleep') continue;
+      _pt.copy(rec.body.p).project(this.stage.camera);
+      const d = Math.hypot(((_pt.x - ndc.x) * el.clientWidth) / 2, ((_pt.y - ndc.y) * el.clientHeight) / 2);
+      if (d < bestD) { bestD = d; best = rec; }
+    }
+    if (best) return best;
     this.raycaster.setFromCamera(ndc, this.stage.camera);
     const meshes = [this.plain.mesh, ...[...this.photoBatches.values()].map((b) => b.mesh)];
     const hits = this.raycaster.intersectObjects(meshes, false);
@@ -138,6 +155,59 @@ export class World {
     this.field.deposit(b.p.x, b.p.z, b.yaw, b.hw * 2, b.hh * 2, thickness);
   }
 
+  /** A printed bill came to rest: it joins the fresh ones, and the oldest of them blends into the pile. */
+  private keepFresh(rec: BillRecord): void {
+    const F = CONFIG.fresh;
+    rec.seatVersion = -1;
+    if (this.fresh.includes(rec)) return; // picked up and put down again
+    rec.crumpleLater = rec.body.crumpleTarget;
+    rec.body.crumpleTarget = F.crumple;
+    this.fresh.push(rec);
+    while (this.fresh.length > F.count) {
+      const old = this.fresh.shift()!;
+      old.fresh = false;
+      old.body.crumpleTarget = old.crumpleLater ?? old.body.crumpleTarget;
+      // It may be in the visitor's hand right now; then it joins the pile when it lands.
+      if (old.body.mode === 'asleep') this.pileAdd(old, CONFIG.pile.thickness);
+    }
+  }
+
+  /** Can the camera see this point, or is the pile or the table in the way? */
+  private visible(pt: THREE.Vector3): boolean {
+    const o = this.stage.camera.position;
+    const d = o.distanceTo(pt);
+    _dir.copy(pt).sub(o).divideScalar(d);
+    // Only the last stretch of the ray can be blocked; stop short of the bill itself.
+    for (let t = Math.max(0.5, d - 2.5); t < d - 0.06; t += 0.03) {
+      _s.copy(o).addScaledVector(_dir, t);
+      if (_s.y < this.field.height(_s.x, _s.z, _s.y) - 0.005) return false;
+    }
+    return true;
+  }
+
+  /** Keep every fresh bill in view and on top of the pile, whatever landed on it since. */
+  private seatFresh(dt: number): void {
+    const F = CONFIG.fresh;
+    this.fresh.forEach((rec, n) => {
+      const b = rec.body;
+      if (b.mode !== 'asleep') return;
+      if (rec.seatVersion !== this.field.version) {
+        rec.seatVersion = this.field.version;
+        const seat = (rec.seat ??= new THREE.Vector3()).copy(b.p);
+        // Newer bills rest a hair higher, so two on the same spot do not flicker.
+        const top = (): number => this.field.height(seat.x, seat.z, b.p.y + 0.05) + F.lift + n * 0.003;
+        seat.y = top();
+        for (let k = 0; k < 40 && !this.visible(seat); k++) {
+          seat.z += F.slideStep; // toward the camera
+          seat.y = top();
+        }
+      }
+      if (b.p.distanceToSquared(rec.seat!) < 1e-8) return;
+      b.p.lerp(rec.seat!, Math.min(1, (dt / F.slideTime) * 3));
+      rec.batch.write(rec);
+    });
+  }
+
   /** Put a settled bill back into the simulation. False when too many are awake. */
   private wake(rec: BillRecord): boolean {
     const i = this.settled.indexOf(rec);
@@ -145,7 +215,7 @@ export class World {
     if (this.live.length >= CONFIG.touch.maxAwake) return false;
     this.settled.splice(i, 1);
     const b = rec.body;
-    this.pileAdd(rec, -CONFIG.pile.thickness);
+    if (!rec.fresh) this.pileAdd(rec, -CONFIG.pile.thickness);
     b.wake();
     this.live.push(rec);
     return true;

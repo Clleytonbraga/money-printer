@@ -18,6 +18,13 @@ export interface BillRecord {
   slot: number;
   /** Landing sound already played. */
   heard?: boolean;
+  /** One of the last bills printed (see World.fresh). */
+  fresh?: boolean;
+  /** Where a fresh bill rests, and for which state of the pile that was worked out. */
+  seat?: THREE.Vector3;
+  seatVersion?: number;
+  /** The crumple it gets once it is no longer fresh. */
+  crumpleLater?: number;
 }
 
 /**

@@ -11,6 +11,7 @@ import { store } from './state';
  */
 export function openDebug(stage: Stage, world: World, print: () => void): void {
   stage.debugGroup.visible = true;
+  (window as unknown as { world: World }).world = world; // for tests and the console
   const gui = new GUI({ title: 'Money Printer · calibration' });
   const apply = () => {
     stage.applyCalibration();
