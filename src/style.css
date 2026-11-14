@@ -24,6 +24,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #f5f5f7; col
 button, a, input, textarea { font: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 3px solid rgba(0, 102, 204, 0.6); outline-offset: 2px; }
+/* Dialog titles take focus only so screen readers read them; they are not controls. */
+h1:focus-visible { outline: none; }
 
 /* HUD */
 .hud { position: absolute; inset: 0; pointer-events: none; }
@@ -37,7 +39,7 @@ button { cursor: pointer; }
 .primary:disabled { opacity: 0.6; cursor: progress; }
 .primary.small-btn { padding: 11px 22px; font-size: 17px; font-weight: 400; line-height: 1.47; }
 .print { position: absolute; right: 32px; bottom: 32px; display: flex; align-items: center; gap: 12px; }
-.fast { width: auto; min-width: 46px; height: 46px; padding: 0 14px; font-weight: 600; font-size: 15px; letter-spacing: -0.224px; font-variant-numeric: tabular-nums; }
+.fast { width: auto; min-width: 46px; height: 46px; padding: 0 14px; font-weight: 600; font-size: 14px; letter-spacing: -0.224px; font-variant-numeric: tabular-nums; }
 .fast[aria-pressed="true"] { background: var(--ink); color: #fff; }
 .round { width: 44px; height: 44px; border-radius: 999px; border: 0; background: var(--glass); color: var(--ink); display: flex; align-items: center; justify-content: center; }
 .sound { position: absolute; top: 24px; right: 24px; }
@@ -124,9 +126,9 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
  * Checked at 360x640, 375x667, 390x844, 667x375 and 844x390.
  */
 @media (max-width: 700px), (max-height: 500px) {
-  .overlay { padding: 8px; }
-  .card, .card.wide { padding: 12px 16px; gap: 6px; }
-  .close { top: 4px; right: 4px; }
+  .overlay { padding: 12px; }
+  .card, .card.wide { padding: 14px 20px 16px; gap: 6px; }
+  .close { top: 8px; right: 8px; }
   .steps { min-height: 28px; margin: 0 44px 2px; }
   h1 { font-size: 28px; }
   .lead { font-size: 14px; line-height: 1.43; }
@@ -143,6 +145,8 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
   .pack .small { text-align: right; }
   .box { margin-top: 10px; padding: 16px; }
   .box.drop { gap: 8px; padding: 16px; }
+  .box.drop .row { justify-content: center; }
+  .box.drop p { text-align: center; }
   .summary { margin-bottom: 0; }
   .row { margin-top: 4px; }
   .center { margin-top: 0; }
@@ -156,9 +160,10 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
   .fields label { margin-top: 2px; }
   .fields textarea { height: 68px; }
   .fields > .small, .card.wide .lead { display: none; }
-  .bill-pop { gap: 12px; }
+  .bill-pop { gap: 12px; justify-content: center; }
   .bill-pop canvas { width: 200px; }
-  .foot { margin-top: 8px; padding-top: 4px; }
+  .foot { gap: 12px; margin-top: 8px; padding-top: 4px; }
+  .foot .text { text-align: left; }
 }
 /* Phone upright. */
 @media (max-width: 700px) and (orientation: portrait) {
@@ -168,8 +173,10 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
   .sound { top: 12px; right: 16px; }
   .panel { right: 16px; top: 64px; }
   .packs { grid-template-columns: 1fr; }
-  /* Four steps beside the close button on a 360 px screen. */
-  .steps { margin: 0 40px 2px 0; gap: 6px; }
+  /* Four steps beside the close button on a 360 px screen, starting at the left edge so they never run under it. */
+  .steps { align-self: flex-start; margin: 0 44px 2px 0; gap: 6px; }
+  /* Bill popup: the bill on top, centred. */
+  .bill-pop canvas { margin-top: 28px; }
   .steps li { white-space: nowrap; }
 }
 /* Phone sideways. */

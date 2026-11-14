@@ -1,3 +1,4 @@
+import { houseNote } from '../jokes';
 import { checkout } from '../payments';
 import { composeBill, GOLD_FILTER, PORTRAIT } from '../scene/billTexture';
 import { formatWait } from '../quota';
@@ -322,7 +323,8 @@ export class Ui {
   private bill(s: State): string {
     const b = s.openBill;
     if (!b) return '';
-    const o = b.owner;
+    // Bills nobody customised carry a harmless joke, the same one for every visitor.
+    const o = b.owner ?? houseNote(b.id);
     const link = o?.link ? (/^https?:\/\//.test(o.link) ? o.link : `https://${o.link}`) : '';
     return `
       <div class="bill-pop">
