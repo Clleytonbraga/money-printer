@@ -54,3 +54,5 @@ Feito:
 - Código da cota grátis: 3 impressões a cada 24h, por IP + aparelho, contadas no Supabase. Falta publicar.
 
 Regra nova de produto: 3 impressões grátis a cada 24h (a partir da 1ª). O relógio é o do servidor.
+
+Publicado: site em https://clleytonbraga.github.io/money-printer/ (`npm run deploy`), código em https://github.com/Clleytonbraga/money-printer. PRD e handoff completos estão no Notion.
