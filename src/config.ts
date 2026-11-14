@@ -153,7 +153,9 @@ export const CONFIG = {
     /** Max slope before the pile slides (angle of repose, radians). */
     repose: 0.55,
     /** Bills already printed by everyone (replace with the server count). */
-    initialBills: 4312,
+    initialBills: 500,
+    /** Portraits on the bills that are already on the floor: one is picked at random per bill. */
+    animals: ['🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🦉', '🐧', '🐰', '🐴'],
     /** Bills kept as real 3D objects. Older ones melt into the pile surface. */
     visualCap: 1100,
   },

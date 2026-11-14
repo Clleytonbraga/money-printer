@@ -108,7 +108,11 @@ export class BillBatch {
   private readonly m = new THREE.Matrix4();
   private readonly one = new THREE.Vector3(1, 1, 1);
 
+  /** The bill face this batch prints (for the popup). */
+  readonly face: CanvasImageSource;
+
   constructor(texture: THREE.Texture, readonly capacity: number) {
+    this.face = texture.image;
     const s = CONFIG.bill.scale;
     const half = new THREE.Vector2((CONFIG.bill.w * s) / 2, (CONFIG.bill.h * s) / 2);
     const geo = new THREE.PlaneGeometry(half.x * 2, half.y * 2, CONFIG.bill.segX, CONFIG.bill.segY);

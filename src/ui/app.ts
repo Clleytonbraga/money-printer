@@ -354,7 +354,7 @@ export class Ui {
     const c = this.overlay.querySelector<HTMLCanvasElement>('[data-bill]');
     const b = s.openBill;
     if (!c || !b) return;
-    const photo = b.owner?.photo && s.photo ? { image: s.photo, zoom: s.zoom, panX: s.panX, panY: s.panY } : undefined;
-    c.getContext('2d')!.drawImage(composeBill(this.art, photo), 0, 0, c.width, c.height);
+    // The face this very bill was printed with: plain, an animal, or its owner's photo.
+    c.getContext('2d')!.drawImage(b.batch.face, 0, 0, c.width, c.height);
   }
 }

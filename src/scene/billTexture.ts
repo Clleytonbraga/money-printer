@@ -132,6 +132,25 @@ function engrave(photo: PhotoOptions, w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
+/**
+ * A portrait for a bill nobody owns: an animal emoji, drawn big, then engraved
+ * like any photo. ponytail: the emoji comes from the visitor's own system font,
+ * so there are no image files to ship or license; swap in real photos if the
+ * look should be the same on every device.
+ */
+export function animalPortrait(emoji: string): PhotoOptions {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, 256, 256);
+  g.font = '236px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(emoji, 128, 146);
+  return { image: c, zoom: 1, panX: 0, panY: 0 };
+}
+
 /** The face value ("200" over "RAY") in the two panels beside the portrait. */
 function drawValue(g: CanvasRenderingContext2D, W: number, H: number): void {
   const { value, unit } = CONFIG.bill;

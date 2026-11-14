@@ -3,7 +3,7 @@ import { CONFIG } from '../config';
 import { BillBody } from '../physics/billBody';
 import { Heightfield } from '../physics/heightfield';
 import { BillBatch, type BillRecord, type Owner } from './billBatch';
-import { canvasTexture, composeBill, loadBillArt, makePileTexture, type PhotoOptions } from './billTexture';
+import { animalPortrait, canvasTexture, composeBill, loadBillArt, makePileTexture, type PhotoOptions } from './billTexture';
 import { PileMesh } from './pileMesh';
 import type { Stage } from './stage';
 
@@ -28,6 +28,8 @@ export class World {
   readonly field = new Heightfield();
   private plain!: BillBatch;
   private readonly photoBatches = new Map<string, BillBatch>();
+  /** One batch per animal portrait, for the bills that start on the floor. */
+  private animalBatches: BillBatch[] = [];
   private readonly live: BillRecord[] = [];
   /** Settled bills, oldest first, so the oldest can be retired into the pile. */
   private readonly settled: BillRecord[] = [];
@@ -53,7 +55,14 @@ export class World {
     this.stage.scene.add(this.plain.mesh);
     this.pile = new PileMesh(this.field, makePileTexture(composeBill(this.art)));
     this.stage.scene.add(this.pile.mesh);
-    this.seedPile(CONFIG.pile.initialBills);
+    const visible = Math.min(CONFIG.pile.initialBills, Math.floor(CONFIG.pile.visualCap * 0.6));
+    this.animalBatches = CONFIG.pile.animals.map((emoji) => {
+      // Room for an uneven random split of the visible bills.
+      const batch = new BillBatch(canvasTexture(composeBill(this.art, animalPortrait(emoji))), Math.ceil((visible / CONFIG.pile.animals.length) * 2) + 8);
+      this.stage.scene.add(batch.mesh);
+      return batch;
+    });
+    this.seedPile(CONFIG.pile.initialBills, visible);
   }
 
   /** Register the buyer's photo; returns a key to pass to print(). */
@@ -74,7 +83,9 @@ export class World {
     if (!this.printing && this.queue.length) {
       const job = this.queue.shift()!;
       const batch = (job.photoKey && this.photoBatches.get(job.photoKey)) || this.plain;
+      // Keep the number of 3D bills bounded, whichever batch they are in.
       if (batch.full) this.retire(batch);
+      else if (this.settled.length >= CONFIG.pile.visualCap) this.retire();
       const rec = batch.add({ id: job.id, gold: job.gold, owner: job.owner, body: new BillBody(), fresh: true });
       this.live.push(rec);
       this.printing = rec;
@@ -111,16 +122,17 @@ export class World {
     }
     this.seatFresh(dt);
     this.plain.flush();
+    for (const b of this.animalBatches) b.flush();
     for (const b of this.photoBatches.values()) b.flush();
     this.pile.update();
   }
 
   /** Oldest settled bill of this batch becomes part of the pile surface. */
-  private retire(batch: BillBatch): void {
-    const i = this.settled.findIndex((r) => r.batch === batch && !r.fresh);
+  private retire(batch?: BillBatch): void {
+    const i = this.settled.findIndex((r) => (!batch || r.batch === batch) && !r.fresh);
     if (i < 0) return;
     const [r] = this.settled.splice(i, 1);
-    batch.remove(r);
+    r.batch.remove(r);
   }
 
   /** Bill under the pointer, if any. */
@@ -137,12 +149,12 @@ export class World {
     }
     if (best) return best;
     this.raycaster.setFromCamera(ndc, this.stage.camera);
-    const meshes = [this.plain.mesh, ...[...this.photoBatches.values()].map((b) => b.mesh)];
+    const batches = [this.plain, ...this.animalBatches, ...this.photoBatches.values()];
+    const meshes = batches.map((b) => b.mesh);
     const hits = this.raycaster.intersectObjects(meshes, false);
     for (const h of hits) {
       if (h.instanceId == null) continue;
-      const batch = h.object === this.plain.mesh ? this.plain : [...this.photoBatches.values()].find((b) => b.mesh === h.object);
-      const rec = batch?.records[h.instanceId];
+      const rec = batches.find((b) => b.mesh === h.object)?.records[h.instanceId];
       if (rec) return rec;
     }
     return null;
@@ -319,11 +331,10 @@ export class World {
    * simulating them: drop footprints where bills tend to land, then lay the
    * most recent ones on top as real, crumpled bills.
    */
-  private seedPile(count: number): void {
+  private seedPile(count: number, visible: number): void {
     const t = CONFIG.table;
     const landX = CONFIG.printer.slot.x;
     const landZ = t.z + t.d / 2 + 0.35;
-    const visible = Math.min(count, Math.floor(CONFIG.pile.visualCap * 0.6));
     const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
     const tmp = new BillBody();
     for (let k = 0; k < count; k++) {
@@ -338,7 +349,9 @@ export class World {
         b.q.copy(tilt);
         b.p.set(x, this.field.height(x, z) + 0.002, z);
         b.crumple = b.crumpleTarget = 0.3 + Math.random() * 0.6;
-        const rec = this.plain.add({ id: k + 1, gold: Math.random() < 0.15, owner: null, body: b });
+        const open = this.animalBatches.filter((a) => !a.full);
+        const batch = open[Math.floor(Math.random() * open.length)] ?? this.plain;
+        const rec = batch.add({ id: k + 1, gold: Math.random() < 0.15, owner: null, body: b });
         this.settled.push(rec);
       }
       // No per-bill relaxing here: that took ~0.6 s on a laptop and seconds on a phone.
@@ -349,7 +362,9 @@ export class World {
     for (const r of this.settled) {
       const b = r.body;
       b.p.y = this.field.height(b.p.x, b.p.z) + 0.002;
+      r.batch.write(r); // without this the bill keeps the height it had before relaxing
     }
+    for (const b of this.animalBatches) b.flush();
     this.plain.flush();
     this.pile.update();
   }

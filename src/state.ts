@@ -51,7 +51,8 @@ export interface State {
   shared: boolean;
 }
 
-const SAVE_KEY = 'money-printer:wallet';
+// v2: the room now starts with fewer bills, so counts saved before that are dropped.
+const SAVE_KEY = 'money-printer:wallet2';
 
 function loadWallet(): Pick<State, 'free' | 'paid' | 'count'> {
   try {
