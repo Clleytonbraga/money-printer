@@ -116,7 +116,7 @@ export class Heightfield {
    * oriented rectangle) gets `thickness` of height, then the neighbourhood
    * relaxes so no slope is steeper than the angle of repose.
    */
-  deposit(x: number, z: number, angle: number, w: number, h: number, thickness = CONFIG.pile.thickness): void {
+  deposit(x: number, z: number, angle: number, w: number, h: number, thickness = CONFIG.pile.thickness, relax = true): void {
     const c = Math.cos(angle);
     const s = Math.sin(angle);
     const r = Math.hypot(w, h) / 2;
@@ -139,7 +139,8 @@ export class Heightfield {
         }
       }
     }
-    this.relax(i0 - 8, i1 + 8, j0 - 8, j1 + 8, 10);
+    // Seeding thousands of bills skips this and relaxes the whole grid once.
+    if (relax) this.relax(i0 - 8, i1 + 8, j0 - 8, j1 + 8, 10);
     this.version++;
   }
 

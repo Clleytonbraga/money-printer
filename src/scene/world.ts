@@ -271,13 +271,14 @@ export class World {
         const rec = this.plain.add({ id: k + 1, gold: Math.random() < 0.15, owner: null, body: b });
         this.settled.push(rec);
       }
-      this.field.deposit(x, z, yaw, tmp.hw * 2, tmp.hh * 2);
+      // No per-bill relaxing here: that took ~0.6 s on a laptop and seconds on a phone.
+      this.field.deposit(x, z, yaw, tmp.hw * 2, tmp.hh * 2, CONFIG.pile.thickness, false);
     }
-    this.field.relaxAll(60);
+    this.field.relaxAll(200);
     // Relaxing moved the surface: put the visible bills back on top of it.
     for (const r of this.settled) {
       const b = r.body;
-      b.p.y = Math.max(b.p.y, this.field.height(b.p.x, b.p.z) - CONFIG.pile.thickness * 2);
+      b.p.y = this.field.height(b.p.x, b.p.z) + 0.002;
     }
     this.plain.flush();
     this.pile.update();
