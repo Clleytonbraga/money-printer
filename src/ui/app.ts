@@ -41,6 +41,7 @@ export class Ui {
         <input type="range" min="0" max="100" data-range="sfx" aria-label="Sound effects volume">
         <label>${icons.music}<span>Music</span><output data-music></output></label>
         <input type="range" min="0" max="100" data-range="music" aria-label="Music volume">
+        <p class="small credit">“Local Forecast – Elevator” by <a href="https://incompetech.com" target="_blank" rel="noopener noreferrer">Kevin MacLeod</a>, <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>, converted to mono.</p>
       </div>`;
     root.appendChild(this.hud);
     this.countEl = this.hud.querySelector('[data-count]')!;

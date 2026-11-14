@@ -3,7 +3,7 @@
  *  - printer: stepper-motor whine + paper friction noise, gated in steps;
  *  - release: a short paper "flick";
  *  - land: a soft rustle, louder for harder landings.
- * Drop a loop at /assets/music.mp3 to get background music on the music slider.
+ * Drop a loop at /assets/music.m4a to get background music on the music slider.
  */
 export class Sfx {
   private ctx: AudioContext | null = null;
@@ -29,7 +29,7 @@ export class Sfx {
     const d = this.noise.getChannelData(0);
     let b = 0;
     for (let i = 0; i < d.length; i++) { b = 0.97 * b + 0.03 * (Math.random() * 2 - 1); d[i] = b * 6; }
-    const m = new Audio('assets/music.mp3');
+    const m = new Audio('assets/music.m4a');
     m.loop = true;
     m.addEventListener('canplaythrough', () => {
       if (!this.ctx) return;
