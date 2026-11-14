@@ -16,7 +16,7 @@ export class Sfx {
 
   /** Browsers only allow audio after a user gesture: call from a click. */
   unlock(): void {
-    if (this.ctx) { void this.ctx.resume(); return; }
+    if (this.ctx) { this.syncFocus(); return; }
     const ctx = new AudioContext();
     this.ctx = ctx;
     this.sfxGain = ctx.createGain();
@@ -34,17 +34,38 @@ export class Sfx {
     m.addEventListener('canplaythrough', () => {
       if (!this.ctx) return;
       ctx.createMediaElementSource(m).connect(this.musicGain);
-      void m.play().catch(() => undefined);
       this.music = m;
+      this.syncFocus();
     }, { once: true });
     m.addEventListener('error', () => undefined);
+    // Another tab, another window, a locked phone or a backgrounded app: everything goes quiet.
+    const sync = () => this.syncFocus();
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('blur', sync);
+    window.addEventListener('focus', sync);
+    window.addEventListener('pagehide', sync);
+    window.addEventListener('pageshow', sync);
+  }
+
+  /** Sound only while the page is visible and focused. */
+  private syncFocus(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const away = document.hidden || !document.hasFocus();
+    if (away) {
+      this.music?.pause();
+      void ctx.suspend();
+      return;
+    }
+    void ctx.resume();
+    if (this.music && this.musicVolume > 0) void this.music.play().catch(() => undefined);
   }
 
   setSfx(v: number): void { this.sfxVolume = v; if (this.ctx) this.sfxGain.gain.value = v; }
   setMusic(v: number): void {
     this.musicVolume = v;
     if (this.ctx) this.musicGain.gain.value = v;
-    if (this.music && v > 0 && this.music.paused) void this.music.play().catch(() => undefined);
+    if (this.music && v > 0 && this.music.paused && !document.hidden) void this.music.play().catch(() => undefined);
   }
 
   printer(duration: number): void {
