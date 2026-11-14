@@ -6,6 +6,7 @@ import { loadBillArt } from './scene/billTexture';
 import { Stage } from './scene/stage';
 import { World } from './scene/world';
 import type { BillRecord } from './scene/billBatch';
+import { returned } from './payments';
 import { SERVER, server } from './quota';
 import { store } from './state';
 import { Ui } from './ui/app';
@@ -49,7 +50,7 @@ async function main(): Promise<void> {
     world.print(id, gold, owner, owner?.photo ? s.mineKey : null);
   };
 
-  new Ui(root, {
+  const ui = new Ui(root, {
     unlock: () => sfx.unlock(),
     print,
     setSfx: (v) => sfx.setSfx(v),
@@ -69,6 +70,8 @@ async function main(): Promise<void> {
       setTimeout(() => void print(), 400);
     },
   }, await loadBillArt());
+  // Back from Stripe with a paid session: the ink is credited, continue the flow.
+  void returned().then((pack) => { if (pack) ui.afterPurchase(pack); });
 
   // Click a bill in the room to open it.
   const ndc = new THREE.Vector2();

@@ -1,6 +1,6 @@
 import { checkout } from '../payments';
 import { composeBill, GOLD_FILTER, PORTRAIT } from '../scene/billTexture';
-import { formatWait, SERVER, server } from '../quota';
+import { formatWait } from '../quota';
 import { PACKS, store, type PackId, type State } from '../state';
 import { esc, icons } from './icons';
 
@@ -174,18 +174,17 @@ export class Ui {
   private async pay(btn: HTMLButtonElement): Promise<void> {
     const pack = PACKS[store.state.pack];
     btn.disabled = true;
-    btn.textContent = 'Paying…';
-    const ok = await checkout(pack);
-    if (!ok) { btn.disabled = false; btn.textContent = `Pay ${pack.price}`; return; }
-    // The server keeps the balance; without one (local dev) it stays in the browser.
-    if (SERVER && !(await server('buy', pack.id).catch(() => null))) { btn.disabled = false; btn.textContent = `Pay ${pack.price}`; return; }
-    const s = store.state;
-    store.set({
-      paid: SERVER ? s.paid : s.paid + pack.prints,
-      mine: pack.photo ? s.mine : null,
-      mineKey: pack.photo ? s.mineKey : null,
-      screen: pack.photo ? 'photo' : 'room',
-    });
+    btn.textContent = 'Opening checkout…';
+    const r = await checkout(pack);
+    if (r === 'redirect') return; // the page is leaving for Stripe
+    if (r === 'failed') { btn.disabled = false; btn.textContent = `Pay ${pack.price}`; return; }
+    this.afterPurchase(pack.id);
+  }
+
+  /** Ink is in the wallet: Large goes on to the photo step, the others back to the room. */
+  afterPurchase(id: PackId): void {
+    const photo = !!PACKS[id].photo;
+    store.set({ pack: id, mine: photo ? store.state.mine : null, mineKey: photo ? store.state.mineKey : null, screen: photo ? 'photo' : 'room' });
   }
 
   private async share(): Promise<void> {
@@ -258,14 +257,14 @@ export class Ui {
     const p = PACKS[s.pack];
     return `${this.steps(s)}
       <h1 id="dlg-title" tabindex="-1">Checkout</h1>
-      <p class="lead">In production this step is Stripe's secure page.</p>
+      <p class="lead">You pay on Stripe's secure page, then come back here.</p>
       <div class="box summary">
         <div><span>${p.label} ink · ${p.prints} prints</span><strong>${p.price}</strong></div>
         <hr><div class="muted"><span>Total</span><strong>${p.price}</strong></div>
       </div>
       <button class="primary" data-action="pay">Pay ${p.price}</button>
       <button class="text" data-action="back-shop">Back</button>
-      <p class="small center">Simulated. No card is charged.</p>`;
+      <p class="small center">Toy money. Ink only buys prints.</p>`;
   }
 
   private photo(): string {

@@ -9,8 +9,8 @@
  */
 import { store } from './state';
 
-const BASE = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+export const BASE = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+export const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const SERVER = !!BASE && !!KEY;
 
 export interface Quota {
@@ -23,7 +23,7 @@ export interface Quota {
   paid: number;
 }
 
-function device(): string {
+export function device(): string {
   const k = 'money-printer:device';
   let id = localStorage.getItem(k);
   if (!id) localStorage.setItem(k, (id = crypto.randomUUID()));

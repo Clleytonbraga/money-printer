@@ -2,8 +2,8 @@
 //   action 'check' reads the quota and the balance
 //          'free'  spends one free print  (3 per 24 h, per IP and per device)
 //          'paid'  spends one paid print  (balance of this device)
-//          'buy'   credits a pack. SIMULATED PAYMENT: until Stripe is wired,
-//                  anyone can call this. The Stripe webhook must replace it.
+//          'buy'   credits a pack without payment. Only works while the
+//                  STRIPE_SECRET_KEY secret is not set (prototype mode).
 // Secrets: IP_SALT (any long random string).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -32,6 +32,8 @@ Deno.serve(async (req) => {
   const hash = [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  // With Stripe configured, ink is only credited by a real payment (see `checkout`).
+  if (action === 'buy' && Deno.env.get('STRIPE_SECRET_KEY')) return json({ error: 'pay with checkout' }, 403);
   const delta = action === 'paid' ? -1 : action === 'buy' ? PACKS[body.pack] : 0;
   if (delta === undefined) return json({ error: 'bad pack' }, 400);
 
