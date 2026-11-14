@@ -1,0 +1,23 @@
+{
+  "name": "money-printer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm run build && cd dist && touch .nojekyll && git init -q -b gh-pages && git add -A && git -c user.name=deploy -c user.email=deploy@users.noreply.github.com commit -q -m deploy && git push -f https://github.com/Clleytonbraga/money-printer.git gh-pages && rm -rf .git"
+  },
+  "dependencies": {
+    "lil-gui": "^0.20.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

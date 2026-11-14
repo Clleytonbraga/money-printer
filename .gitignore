@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# local only
+.env
+.env.*
+!.env.example
+.playwright-mcp
+art-src
+legacy-2d
+handoff-assets
+.impeccable/hook.cache.json

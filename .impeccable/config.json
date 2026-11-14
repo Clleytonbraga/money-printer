@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-color",
+        "value": "#e8f0fb",
+        "createdAt": "2026-11-14T02:43:29.943Z",
+        "reason": "agent: value comes from the Claude Design canvas (Shop artboard, 'Your photo' tag); the canvas is the design source"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#0055b3",
+        "createdAt": "2026-11-14T02:43:29.996Z",
+        "reason": "agent: value comes from the Claude Design canvas (Shop artboard, 'Your photo' tag); the canvas is the design source"
+      }
+    ]
+  }
+}

@@ -1,0 +1,163 @@
+import * as THREE from 'three';
+import { CONFIG } from '../config';
+
+/** Where the empty portrait circle sits on the bill art (fractions of w/h). */
+export const PORTRAIT = { cx: 0.5, cy: 0.5, rx: 0.182, ry: 0.3525 };
+const INK = '#3f6f4c';
+/** Turns the green art into the gold (paid ink) bill on a 2D canvas. Same values in style.css. */
+export const GOLD_FILTER = 'sepia(1) saturate(2.4) hue-rotate(-12deg) brightness(1.05)';
+
+let baseArt: HTMLCanvasElement | HTMLImageElement | null = null;
+
+/** Load the bill art once. Falls back to a drawn bill if the file is missing. */
+export async function loadBillArt(): Promise<HTMLCanvasElement | HTMLImageElement> {
+  if (baseArt) return baseArt;
+  try {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = CONFIG.bill.textureSrc;
+    await img.decode();
+    baseArt = img;
+  } catch {
+    baseArt = drawFallbackBill();
+  }
+  return baseArt;
+}
+
+/** A plausible fictional note so the project runs before the real art is added. */
+function drawFallbackBill(): HTMLCanvasElement {
+  const W = 1024, H = 434;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d')!;
+  const paper = g.createLinearGradient(0, 0, W, H);
+  paper.addColorStop(0, '#e3ead9'); paper.addColorStop(1, '#d5e0cc');
+  g.fillStyle = paper; g.fillRect(0, 0, W, H);
+  // Fine guilloche lines.
+  g.strokeStyle = 'rgba(63,111,76,0.25)'; g.lineWidth = 1;
+  for (let k = 0; k < 60; k++) {
+    g.beginPath();
+    for (let x = 0; x <= W; x += 8) {
+      const y = H / 2 + Math.sin(x * 0.02 + k * 0.35) * (H * 0.42) * Math.cos(k * 0.11);
+      x === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  g.strokeStyle = INK; g.lineWidth = 10; g.strokeRect(18, 18, W - 36, H - 36);
+  g.lineWidth = 2; g.strokeRect(36, 36, W - 72, H - 72);
+  // Portrait circle (left empty for the photo).
+  g.fillStyle = '#eef3e8';
+  g.beginPath();
+  g.ellipse(W * PORTRAIT.cx, H * PORTRAIT.cy, W * PORTRAIT.rx, H * PORTRAIT.ry, 0, 0, Math.PI * 2);
+  g.fill(); g.lineWidth = 4; g.stroke();
+  g.fillStyle = INK; g.textAlign = 'center';
+  g.font = '600 40px Georgia, serif';
+  g.fillText('THE MONEY PRINTER', W / 2, 92);
+  g.font = '700 90px Georgia, serif';
+  g.fillText('1', 110, 140); g.fillText('1', W - 110, H - 70);
+  g.font = '500 22px Georgia, serif';
+  g.fillText('TOY MONEY · NOT LEGAL TENDER', W / 2, H - 58);
+  return c;
+}
+
+export interface PhotoOptions {
+  image: CanvasImageSource & { width: number; height: number };
+  /** 1 = fit the circle, 3 = 3x closer. */
+  zoom: number;
+}
+
+/**
+ * Bill art, optionally with a portrait printed into the circle.
+ * The photo is treated like ink on paper: black and white, tinted to the
+ * bill's ink, multiplied onto the paper, then the bill's own lines are laid
+ * back over it so the engraving shows through the face.
+ */
+export function composeBill(art: CanvasImageSource & { width: number; height: number }, photo?: PhotoOptions): HTMLCanvasElement {
+  const W = 1024;
+  const H = Math.round((W * art.height) / art.width);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d')!;
+  g.drawImage(art, 0, 0, W, H);
+  if (!photo) return c;
+
+  const cx = W * PORTRAIT.cx, cy = H * PORTRAIT.cy, rx = W * PORTRAIT.rx, ry = H * PORTRAIT.ry;
+
+  // 1) photo -> grayscale, a bit more contrast, cropped to cover the circle.
+  const tmp = document.createElement('canvas');
+  tmp.width = Math.ceil(rx * 2); tmp.height = Math.ceil(ry * 2);
+  const t = tmp.getContext('2d')!;
+  const s = Math.max(tmp.width / photo.image.width, tmp.height / photo.image.height) * photo.zoom;
+  const pw = photo.image.width * s, ph = photo.image.height * s;
+  t.filter = 'grayscale(1) contrast(1.25) brightness(1.08)';
+  t.drawImage(photo.image, (tmp.width - pw) / 2, (tmp.height - ph) / 2, pw, ph);
+  t.filter = 'none';
+  // 2) tint to the bill's ink.
+  t.globalCompositeOperation = 'screen';
+  t.fillStyle = INK; t.fillRect(0, 0, tmp.width, tmp.height);
+  t.globalCompositeOperation = 'multiply';
+  t.fillStyle = '#cfe0c9'; t.fillRect(0, 0, tmp.width, tmp.height);
+
+  // 3) multiply into the circle, with a soft vignette edge.
+  g.save();
+  g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.clip();
+  g.globalCompositeOperation = 'multiply';
+  g.drawImage(tmp, cx - rx, cy - ry);
+  // 4) the note's engraving back on top.
+  g.globalAlpha = 0.45;
+  g.drawImage(art, 0, 0, W, H);
+  g.restore();
+  return c;
+}
+
+export function canvasTexture(c: HTMLCanvasElement): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** A tileable collage of bills for the surface of the big pile. */
+export function makePileTexture(art: CanvasImageSource & { width: number; height: number }): THREE.CanvasTexture {
+  const S = 1024;
+  const c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#b9c7ad'; g.fillRect(0, 0, S, S);
+  const bw = 230, bh = Math.round((bw * art.height) / art.width);
+  // Tint each variant ONCE. A canvas filter or shadowBlur on every one of the
+  // ~1,260 stamps below stalls the GPU process on real hardware until the
+  // browser kills it, and the page then loses its WebGL context.
+  const stamp = (filter: string): HTMLCanvasElement => {
+    const t = document.createElement('canvas');
+    t.width = bw; t.height = bh;
+    const tg = t.getContext('2d')!;
+    tg.filter = filter;
+    tg.drawImage(art, 0, 0, bw, bh);
+    return t;
+  };
+  const green = stamp('none');
+  const golden = stamp(GOLD_FILTER);
+  const reach = Math.hypot(bw, bh) / 2 + 8;
+  for (let k = 0; k < 140; k++) {
+    const x = Math.random() * S, y = Math.random() * S, a = Math.random() * Math.PI * 2;
+    const art2 = Math.random() < 0.18 ? golden : green;
+    const shade = art2 === golden ? 0 : Math.random() * 0.2;
+    for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) {
+      const px = x + ox, py = y + oy;
+      if (px < -reach || px > S + reach || py < -reach || py > S + reach) continue;   // wrapped copy is off-canvas
+      g.save();
+      g.translate(px, py); g.rotate(a);
+      g.fillStyle = 'rgba(0,0,0,0.22)';                       // cheap drop shadow
+      g.fillRect(-bw / 2 - 2, -bh / 2, bw + 6, bh + 6);
+      g.drawImage(art2, -bw / 2, -bh / 2);
+      if (shade > 0) { g.fillStyle = `rgba(0,0,0,${shade.toFixed(3)})`; g.fillRect(-bw / 2, -bh / 2, bw, bh); }
+      g.restore();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
