@@ -33,6 +33,8 @@ export interface State {
   count: number;
   pack: PackId;
   soundOpen: boolean;
+  /** The 2x button: the printer feeds paper twice as fast. */
+  fast: boolean;
   sfx: number;
   music: number;
   /** The buyer's photo, while they are in the Large flow. */
@@ -71,6 +73,7 @@ class Store {
     freeResetAt: null,
     pack: 'medium',
     soundOpen: false,
+    fast: false,
     sfx: 80,
     music: 40,
     photo: null,

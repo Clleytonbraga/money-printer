@@ -17,7 +17,7 @@ async function main(): Promise<void> {
   const stage = new Stage(root);
   const sfx = new Sfx();
   const world = new World(stage, {
-    onPrintStart: () => sfx.printer(CONFIG.printer.emergeTime),
+    onPrintStart: () => sfx.printer(CONFIG.printer.emergeTime / world.feed),
     onRelease: () => sfx.flick(),
     onLand: (impact) => sfx.land(impact),
     onSettle: (rec, at) => { if (SERVER) place(rec.id, at.x, at.z, rec.body.yaw); },
@@ -55,6 +55,8 @@ async function main(): Promise<void> {
     store.set({ count: Math.max(s.count, id) });
     world.print(id, gold, gold ? s.mine : null);
   };
+
+  store.subscribe((s) => { world.feed = s.fast ? 2 : 1; });
 
   const ui = new Ui(root, {
     unlock: () => sfx.unlock(),

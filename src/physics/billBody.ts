@@ -61,6 +61,8 @@ export class BillBody {
 
   // Emerging from the printer.
   emerge = 0;
+  /** Feed speed multiplier (the 2x button). */
+  feed = 1;
   private readonly slot = new THREE.Vector3();
   private readonly slotDir = new THREE.Vector3();
   private readonly slotQ = new THREE.Quaternion();
@@ -138,7 +140,7 @@ export class BillBody {
 
   private stepEmerging(dt: number): void {
     const pr = CONFIG.printer;
-    this.emerge = Math.min(1, this.emerge + dt / pr.emergeTime);
+    this.emerge = Math.min(1, this.emerge + (dt * this.feed) / pr.emergeTime);
     // Stepper motor: slightly jerky feed.
     const e = this.emerge;
     const jitter = Math.sin(this.t * 70) * 0.0015 * (1 - e);

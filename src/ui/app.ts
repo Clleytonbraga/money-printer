@@ -30,7 +30,10 @@ export class Ui {
     this.hud.innerHTML = `
       <p class="counter"><strong data-count></strong> bills printed</p>
       <button class="chip ink" data-action="shop">${icons.wallet}<span data-ink></span></button>
-      <button class="primary print" data-action="print">Print money</button>
+      <div class="print">
+        <button class="round fast" aria-label="Print twice as fast" aria-pressed="false" data-action="fast">2x</button>
+        <button class="primary" data-action="print">Print money</button>
+      </div>
       <button class="round sound" aria-label="Sound settings" aria-expanded="false" data-action="sound">${icons.sound}</button>
       <div class="panel sound-panel" hidden>
         <label>${icons.soundSmall}<span>Sound effects</span><output data-sfx></output></label>
@@ -102,6 +105,7 @@ export class Ui {
 
   private sync(s: State, prev: State | null): void {
     this.countEl.textContent = s.count.toLocaleString('en-US');
+    this.hud.querySelector('.fast')!.setAttribute('aria-pressed', String(s.fast));
     const ink = s.free + s.paid;
     this.inkBtn.querySelector('[data-ink]')!.textContent = String(ink);
     this.inkBtn.setAttribute('aria-label', `Ink shop, ${ink} prints left`);
@@ -126,6 +130,7 @@ export class Ui {
     const s = store.state;
     switch (el.dataset.action) {
       case 'print': this.actions.print(); break;
+      case 'fast': store.set({ fast: !store.state.fast }); break;
       case 'shop': store.set({ screen: 'shop', soundOpen: false }); break;
       case 'sound': store.set({ soundOpen: !s.soundOpen }); break;
       case 'close': store.set({ screen: 'room', shared: false }); break;

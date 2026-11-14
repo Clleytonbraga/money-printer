@@ -49,6 +49,8 @@ export class World {
   private readonly hand = new THREE.Vector3();
   private readonly sweepAt = new THREE.Vector3();
   private sweepTime = 0;
+  /** 2 while the visitor has the 2x button on. */
+  feed = 1;
   /** The last CONFIG.fresh.count bills printed, oldest first. */
   private readonly fresh: BillRecord[] = [];
 
@@ -98,7 +100,9 @@ export class World {
       // Keep the number of 3D bills bounded, whichever batch they are in.
       if (batch.full) this.retire(batch);
       else if (this.settled.length >= CONFIG.pile.visualCap) this.retire();
-      const rec = batch.add({ id: job.id, gold: job.gold, owner: job.owner, body: new BillBody(), fresh: true });
+      const body = new BillBody();
+      body.feed = this.feed;
+      const rec = batch.add({ id: job.id, gold: job.gold, owner: job.owner, body, fresh: true });
       this.live.push(rec);
       this.printing = rec;
       this.events.onPrintStart?.();
