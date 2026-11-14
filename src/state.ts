@@ -38,6 +38,9 @@ export interface State {
   /** The buyer's photo, while they are in the Large flow. */
   photo: HTMLImageElement | null;
   zoom: number;
+  /** Photo position inside the circle, -1..1 (see PhotoOptions). */
+  panX: number;
+  panY: number;
   name: string;
   text: string;
   link: string;
@@ -71,6 +74,8 @@ class Store {
     music: 40,
     photo: null,
     zoom: 1.4,
+    panX: 0,
+    panY: 0,
     name: '',
     text: '',
     link: '',

@@ -4,6 +4,8 @@ import { CONFIG } from '../config';
 /** Where the empty portrait circle sits on the bill art (fractions of w/h). */
 export const PORTRAIT = { cx: 0.5, cy: 0.5, rx: 0.182, ry: 0.3525 };
 const INK = '#3f6f4c';
+/** Width of the composed bill texture. */
+const BILL_W = 1024;
 /** Turns the green art into the gold (paid ink) bill on a 2D canvas. Same values in style.css. */
 export const GOLD_FILTER = 'sepia(1) saturate(2.4) hue-rotate(-12deg) brightness(1.05)';
 
@@ -64,6 +66,9 @@ export interface PhotoOptions {
   image: CanvasImageSource & { width: number; height: number };
   /** 1 = fit the circle, 3 = 3x closer. */
   zoom: number;
+  /** Where the photo sits inside the circle: -1..1 of the room the zoom leaves, 0 = centred. */
+  panX: number;
+  panY: number;
 }
 
 const smooth = (a: number, b: number, x: number): number => {
@@ -86,7 +91,7 @@ function engrave(photo: PhotoOptions, w: number, h: number): HTMLCanvasElement {
   t.fillStyle = '#fff'; t.fillRect(0, 0, w, h);
   const s = Math.max(w / photo.image.width, h / photo.image.height) * photo.zoom;
   const pw = photo.image.width * s, ph = photo.image.height * s;
-  t.drawImage(photo.image, (w - pw) / 2, (h - ph) / 2, pw, ph);
+  t.drawImage(photo.image, (w - pw) / 2 + photo.panX * (pw - w) / 2, (h - ph) / 2 + photo.panY * (ph - h) / 2, pw, ph);
 
   const img = t.getImageData(0, 0, w, h);
   const d = img.data;
@@ -127,17 +132,39 @@ function engrave(photo: PhotoOptions, w: number, h: number): HTMLCanvasElement {
   return c;
 }
 
+/** The face value ("200" over "RAY") in the two panels beside the portrait. */
+function drawValue(g: CanvasRenderingContext2D, W: number, H: number): void {
+  const { value, unit } = CONFIG.bill;
+  g.save();
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
+  for (const x of [0.158, 0.842]) {
+    // Paper-coloured halo first, so the ink reads over the guilloche lines.
+    for (const [text, font, y, halo] of [[value, `700 ${H * 0.2}px Georgia, 'Times New Roman', serif`, 0.545, 10], [unit, `700 ${H * 0.066}px Georgia, 'Times New Roman', serif`, 0.66, 6]] as const) {
+      g.font = font;
+      if ('letterSpacing' in g) (g as { letterSpacing: string }).letterSpacing = text === unit ? '4px' : '0px';
+      g.strokeStyle = 'rgba(214, 232, 208, 0.9)';
+      g.lineWidth = halo;
+      g.strokeText(text, W * x, H * y);
+      g.fillStyle = INK;
+      g.fillText(text, W * x, H * y);
+    }
+  }
+  g.restore();
+}
+
 /**
  * Bill art, optionally with a portrait printed into the circle, engraved in
  * the bill's own ink (see `engrave`).
  */
 export function composeBill(art: CanvasImageSource & { width: number; height: number }, photo?: PhotoOptions): HTMLCanvasElement {
-  const W = 1024;
+  const W = BILL_W;
   const H = Math.round((W * art.height) / art.width);
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d')!;
   g.drawImage(art, 0, 0, W, H);
+  drawValue(g, W, H);
   if (!photo) return c;
 
   const cx = W * PORTRAIT.cx, cy = H * PORTRAIT.cy, rx = W * PORTRAIT.rx, ry = H * PORTRAIT.ry;

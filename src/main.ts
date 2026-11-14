@@ -62,7 +62,7 @@ async function main(): Promise<void> {
       let key: string | null = null;
       if (s.photo) {
         key = `photo-${Date.now()}`;
-        world.addPhoto(key, { image: s.photo, zoom: s.zoom });
+        world.addPhoto(key, { image: s.photo, zoom: s.zoom, panX: s.panX, panY: s.panY });
       }
       store.set({
         mine: { name: s.name.trim(), text: s.text.trim(), link: s.link.trim(), photo: !!s.photo },

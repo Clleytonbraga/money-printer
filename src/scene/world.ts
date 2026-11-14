@@ -47,7 +47,7 @@ export class World {
     this.art = await loadBillArt();
     this.plain = new BillBatch(canvasTexture(composeBill(this.art)), CONFIG.pile.visualCap + 64);
     this.stage.scene.add(this.plain.mesh);
-    this.pile = new PileMesh(this.field, makePileTexture(this.art));
+    this.pile = new PileMesh(this.field, makePileTexture(composeBill(this.art)));
     this.stage.scene.add(this.pile.mesh);
     this.seedPile(CONFIG.pile.initialBills);
   }

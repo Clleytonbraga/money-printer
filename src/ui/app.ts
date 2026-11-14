@@ -1,5 +1,5 @@
 import { checkout } from '../payments';
-import { composeBill, GOLD_FILTER } from '../scene/billTexture';
+import { composeBill, GOLD_FILTER, PORTRAIT } from '../scene/billTexture';
 import { formatWait } from '../quota';
 import { PACKS, store, type PackId, type State } from '../state';
 import { esc, icons } from './icons';
@@ -65,6 +65,33 @@ export class Ui {
       e.preventDefault();
       this.loadPhoto(file);
     });
+    // Drag the photo inside the circle of the preview bill.
+    let dragFrom: { x: number; y: number } | null = null;
+    this.overlay.addEventListener('pointerdown', (e) => {
+      const c = e.target as HTMLElement;
+      if (!c.matches('[data-preview]') || !store.state.photo) return;
+      c.setPointerCapture(e.pointerId);
+      dragFrom = { x: e.clientX, y: e.clientY };
+    });
+    this.overlay.addEventListener('pointermove', (e) => {
+      const s = store.state;
+      if (!dragFrom || !s.photo) return;
+      const r = (e.target as HTMLElement).getBoundingClientRect();
+      // Circle size on screen, and how far the zoomed photo overhangs it.
+      const cw = r.width * PORTRAIT.rx * 2, ch = r.height * PORTRAIT.ry * 2;
+      const k = Math.max(cw / s.photo.width, ch / s.photo.height) * s.zoom;
+      const roomX = (s.photo.width * k - cw) / 2, roomY = (s.photo.height * k - ch) / 2;
+      const clamp = (v: number): number => Math.max(-1, Math.min(1, v));
+      store.set({
+        panX: roomX > 0.5 ? clamp(s.panX + (e.clientX - dragFrom.x) / roomX) : 0,
+        panY: roomY > 0.5 ? clamp(s.panY + (e.clientY - dragFrom.y) / roomY) : 0,
+      });
+      dragFrom = { x: e.clientX, y: e.clientY };
+      this.drawPreview();
+    });
+    const endDrag = (): void => { dragFrom = null; };
+    this.overlay.addEventListener('pointerup', endDrag);
+    this.overlay.addEventListener('pointercancel', endDrag);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && store.state.screen !== 'room') store.set({ screen: 'room', shared: false });
     });
@@ -139,7 +166,7 @@ export class Ui {
     if (!file.type.startsWith('image/')) { alert('Choose an image file.'); return; }
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => store.set({ photo: img, zoom: 1.4, screen: 'preview' });
+    img.onload = () => store.set({ photo: img, zoom: 1.4, panX: 0, panY: 0, screen: 'preview' });
     img.onerror = () => alert('That file could not be read. Try a JPG or PNG.');
     img.src = url;
   }
@@ -265,7 +292,8 @@ export class Ui {
       <p class="lead">People can tap your bill anywhere in the room. This is what they see.</p>
       <div class="preview">
         <div class="preview-bill">
-          <canvas data-preview width="880" height="454" role="img" aria-label="${has ? 'Gold banknote with your photo' : 'Gold banknote'}"></canvas>
+          <canvas data-preview width="880" height="454" role="img" class="${has ? 'movable' : ''}" aria-label="${has ? 'Gold banknote with your photo. Drag to move the photo.' : 'Gold banknote'}"></canvas>
+          ${has ? '<p class="small hint">Drag the photo to move it.</p>' : ''}
           ${has ? `<label class="zoom">Zoom <input type="range" min="100" max="300" value="${Math.round(s.zoom * 100)}" data-range="zoom"></label>` : ''}
           <button class="text" data-action="to-photo">${has ? 'Change photo' : 'Add a photo'}</button>
         </div>
@@ -310,7 +338,7 @@ export class Ui {
     const c = this.overlay.querySelector<HTMLCanvasElement>('[data-preview]');
     if (!c) return;
     const s = store.state;
-    const bill = composeBill(this.art, s.photo ? { image: s.photo, zoom: s.zoom } : undefined);
+    const bill = composeBill(this.art, s.photo ? { image: s.photo, zoom: s.zoom, panX: s.panX, panY: s.panY } : undefined);
     const g = c.getContext('2d')!;
     g.clearRect(0, 0, c.width, c.height);
     g.filter = GOLD_FILTER;
@@ -322,7 +350,7 @@ export class Ui {
     const c = this.overlay.querySelector<HTMLCanvasElement>('[data-bill]');
     const b = s.openBill;
     if (!c || !b) return;
-    const photo = b.owner?.photo && s.photo ? { image: s.photo, zoom: s.zoom } : undefined;
+    const photo = b.owner?.photo && s.photo ? { image: s.photo, zoom: s.zoom, panX: s.panX, panY: s.panY } : undefined;
     c.getContext('2d')!.drawImage(composeBill(this.art, photo), 0, 0, c.width, c.height);
   }
 }

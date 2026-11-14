@@ -47,6 +47,9 @@ export const CONFIG = {
     segY: 9,
     /** Green bill art. Missing file -> a procedural bill is drawn instead. */
     textureSrc: 'assets/bill-green.webp',
+    /** Face value printed on both sides of the portrait. "Ray" is the toy currency. */
+    value: '200',
+    unit: 'RAY',
   },
   /** How the buyer's photo is engraved into the bill (billTexture.ts `engrave`). */
   portrait: {
