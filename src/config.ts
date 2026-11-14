@@ -48,6 +48,26 @@ export const CONFIG = {
     /** Green bill art. Missing file -> a procedural bill is drawn instead. */
     textureSrc: 'assets/bill-green.webp',
   },
+  /** How the buyer's photo is engraved into the bill (billTexture.ts `engrave`). */
+  portrait: {
+    /** Distance between ink lines, in texture pixels (the circle is ~370 px wide). */
+    linePitch: 5,
+    /** How much the lines wave (px). */
+    wave: 3.2,
+    /** Line edge softness: lower = crisper ink. */
+    soft: 0.14,
+    /** Below 1 lifts the mid tones so faces do not go muddy. */
+    gamma: 0.85,
+    /** Darkness (0..1) where the crossing lines start. */
+    crossFrom: 0.45,
+    /** Strength of the lines and of the flat tone under them. */
+    lines: 0.9,
+    wash: 0.35,
+    /** Where the fade to bare paper starts (1 = the edge of the circle). */
+    fade: 0.78,
+    /** How much of the bill's own paper is laid back over the portrait. */
+    paper: 0.2,
+  },
   /** Playing with the bills: tap opens, drag spreads, press-and-hold grabs. */
   touch: {
     /** A press shorter than this (ms) that moved less than tapPx is a tap. */

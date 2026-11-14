@@ -66,11 +66,70 @@ export interface PhotoOptions {
   zoom: number;
 }
 
+const smooth = (a: number, b: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
 /**
- * Bill art, optionally with a portrait printed into the circle.
- * The photo is treated like ink on paper: black and white, tinted to the
- * bill's ink, multiplied onto the paper, then the bill's own lines are laid
- * back over it so the engraving shows through the face.
+ * Photo -> banknote engraving, w x h, ink on white.
+ * Any photo works: levels are stretched first, so a dark or flat picture
+ * still gets full contrast. Tone is then drawn the way a note's portrait is:
+ * wavy ink lines that get thicker where the photo is darker, a second set of
+ * crossing lines in the shadows, and a soft fade to bare paper at the edge.
+ */
+function engrave(photo: PhotoOptions, w: number, h: number): HTMLCanvasElement {
+  const E = CONFIG.portrait;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const t = c.getContext('2d', { willReadFrequently: true })!;
+  t.fillStyle = '#fff'; t.fillRect(0, 0, w, h);
+  const s = Math.max(w / photo.image.width, h / photo.image.height) * photo.zoom;
+  const pw = photo.image.width * s, ph = photo.image.height * s;
+  t.drawImage(photo.image, (w - pw) / 2, (h - ph) / 2, pw, ph);
+
+  const img = t.getImageData(0, 0, w, h);
+  const d = img.data;
+  const lum = new Float32Array(w * h);
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < lum.length; i++) {
+    lum[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    hist[lum[i] | 0]++;
+  }
+  // Auto levels: ignore the darkest and brightest 2 %.
+  const cut = lum.length * 0.02;
+  let lo = 0, hi = 255;
+  for (let n = 0; lo < 255 && (n += hist[lo]) < cut; lo++);
+  for (let n = 0; hi > lo + 1 && (n += hist[hi]) < cut; hi--);
+
+  const ink = [parseInt(INK.slice(1, 3), 16), parseInt(INK.slice(3, 5), 16), parseInt(INK.slice(5, 7), 16)];
+  const k = (Math.PI * 2) / E.linePitch;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const edge = Math.hypot((x - w / 2) / (w / 2), (y - h / 2) / (h / 2));
+      const dark = Math.pow(1 - Math.min(1, Math.max(0, (lum[i] - lo) / (hi - lo))), E.gamma) * smooth(1, E.fade, edge);
+      // Main lines run across the face and wave a little, like a guilloche.
+      const l1 = 0.5 + 0.5 * Math.sin((y + Math.sin(x * 0.035) * E.wave) * k);
+      // Cross lines only where it is really dark.
+      const l2 = 0.5 + 0.5 * Math.sin((x * 0.8 + y * 0.6) * k);
+      const a = Math.max(
+        smooth(l1 - E.soft, l1 + E.soft, dark * 1.15),
+        smooth(l2 - E.soft, l2 + E.soft, (dark - E.crossFrom) / (1 - E.crossFrom)),
+      );
+      // Lines carry most of the tone; a wash under them keeps the face readable when small.
+      const amount = Math.min(1, a * E.lines + dark * E.wash);
+      for (let ch = 0; ch < 3; ch++) d[i * 4 + ch] = 255 + (ink[ch] - 255) * amount;
+      d[i * 4 + 3] = 255;
+    }
+  }
+  t.putImageData(img, 0, 0);
+  return c;
+}
+
+/**
+ * Bill art, optionally with a portrait printed into the circle, engraved in
+ * the bill's own ink (see `engrave`).
  */
 export function composeBill(art: CanvasImageSource & { width: number; height: number }, photo?: PhotoOptions): HTMLCanvasElement {
   const W = 1024;
@@ -83,28 +142,16 @@ export function composeBill(art: CanvasImageSource & { width: number; height: nu
 
   const cx = W * PORTRAIT.cx, cy = H * PORTRAIT.cy, rx = W * PORTRAIT.rx, ry = H * PORTRAIT.ry;
 
-  // 1) photo -> grayscale, a bit more contrast, cropped to cover the circle.
-  const tmp = document.createElement('canvas');
-  tmp.width = Math.ceil(rx * 2); tmp.height = Math.ceil(ry * 2);
-  const t = tmp.getContext('2d')!;
-  const s = Math.max(tmp.width / photo.image.width, tmp.height / photo.image.height) * photo.zoom;
-  const pw = photo.image.width * s, ph = photo.image.height * s;
-  t.filter = 'grayscale(1) contrast(1.25) brightness(1.08)';
-  t.drawImage(photo.image, (tmp.width - pw) / 2, (tmp.height - ph) / 2, pw, ph);
-  t.filter = 'none';
-  // 2) tint to the bill's ink.
-  t.globalCompositeOperation = 'screen';
-  t.fillStyle = INK; t.fillRect(0, 0, tmp.width, tmp.height);
-  t.globalCompositeOperation = 'multiply';
-  t.fillStyle = '#cfe0c9'; t.fillRect(0, 0, tmp.width, tmp.height);
+  const tmp = engrave(photo, Math.ceil(rx * 2), Math.ceil(ry * 2));
 
-  // 3) multiply into the circle, with a soft vignette edge.
+  // Multiply into the circle: white stays paper, ink darkens it.
   g.save();
   g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.clip();
   g.globalCompositeOperation = 'multiply';
   g.drawImage(tmp, cx - rx, cy - ry);
-  // 4) the note's engraving back on top.
-  g.globalAlpha = 0.45;
+  // A little of the note's own paper back on top, so the two sit together.
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = CONFIG.portrait.paper;
   g.drawImage(art, 0, 0, W, H);
   g.restore();
   return c;

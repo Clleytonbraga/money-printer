@@ -30,7 +30,8 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 
 ## Rules added on 2026-11-13
 
-- **Free prints: 3 per rolling 24 h, counted on the server per IP and per device** (`supabase/migrations/001_free_quota.sql`, `supabase/functions/print`, `src/quota.ts`). The device clock is never trusted: the server answers `free` and `resetIn` (seconds). Without `VITE_SUPABASE_URL` the site runs in local test mode (wallet in localStorage, no 24 h rule). Not deployed yet: needs the Supabase project.
+- **Free prints: 3 per rolling 24 h, counted on the server per IP and per device** (`supabase/migrations/001_free_quota.sql`, `supabase/functions/print`, `src/quota.ts`). The device clock is never trusted: the server answers `free` and `resetIn` (seconds). Without `VITE_SUPABASE_URL` the site runs in local test mode (wallet in localStorage, no 24 h rule). Live since 2026-11-14 on the Supabase project `money-printer` (ref `sqyuufrkpzaywpsfxgim`, us-east-1). The public URL and anon key are in `.env.local` (not in git); the local `supabase` shim cannot run `db push`, so SQL goes through the Management API or `npx supabase@latest`.
+- **Photo on the bill** is engraved, not tinted: `engrave()` in `scene/billTexture.ts`, tunables in `CONFIG.portrait`.
 - **Playing with the bills** (`main.ts` gesture block, `World.sweep/grab/grabMore/moveHeld/drop`, `CONFIG.touch`): tap opens the bill, drag spreads bills and shoves the pile, press-and-hold picks up one bill and then a handful. Local to each visitor until shared bills exist.
 - **Heightfield is 2.5D.** `height(x, z, y)` returns the floor for a point more than `pile.overhang` under a surface (under the table/tray), and the lower level at a `pile.cliff` edge. Always pass `y` from physics code. Contact push-out is capped by `physics.maxPushOut`; uncapped it kicked bills back into the air.
 - Mobile layouts are done: `Stage.layout` (portrait anchors the photo at the bottom, CSS mask fades the top) and the two media queries at the end of `style.css`.
@@ -41,6 +42,6 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 2. Global counter + shared bills (owner name/text/link/photo) from a backend; seed the pile from it.
 3. Photo/text moderation before bills become public.
 4. Realism roadmap in `docs/realismo.md` (PBD paper, table leg occluders, env map from the photo).
-5. Deploy the free-print quota (Supabase project, `supabase db push`, `supabase functions deploy print`, secret `IP_SALT`) and move paid prints to the server with the Stripe webhook.
+5. Move paid prints to the server with the Stripe webhook (free prints already are).
 
 The design source lives in the Claude Design canvas "The Money Printer" (artboards: Desktop · sala, Compra 1–4, Nota aberta, Protótipo completo).
