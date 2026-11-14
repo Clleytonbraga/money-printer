@@ -2,7 +2,7 @@ import { houseNote } from '../jokes';
 import { checkout } from '../payments';
 import { composeBill, GOLD_FILTER, PORTRAIT } from '../scene/billTexture';
 import { formatWait } from '../quota';
-import { PACKS, store, type PackId, type State } from '../state';
+import { PACKS, SPEEDS, store, type PackId, type State } from '../state';
 import { esc, icons } from './icons';
 
 export interface UiActions {
@@ -32,7 +32,7 @@ export class Ui {
       <p class="counter"><strong data-count></strong> bills printed</p>
       <button class="chip ink" data-action="shop">${icons.wallet}<span data-ink></span></button>
       <div class="print">
-        <button class="round fast" aria-label="Print twice as fast" aria-pressed="false" data-action="fast">2x</button>
+        <button class="round fast" aria-pressed="false" data-action="fast"></button>
         <button class="primary" data-action="print">Print money</button>
       </div>
       <button class="round sound" aria-label="Sound settings" aria-expanded="false" data-action="sound">${icons.sound}</button>
@@ -106,7 +106,10 @@ export class Ui {
 
   private sync(s: State, prev: State | null): void {
     this.countEl.textContent = s.count.toLocaleString('en-US');
-    this.hud.querySelector('.fast')!.setAttribute('aria-pressed', String(s.fast));
+    const fast = this.hud.querySelector('.fast')!;
+    fast.textContent = s.speed === 'off' ? '1x' : s.speed === 'auto' ? 'Auto' : s.speed;
+    fast.setAttribute('aria-pressed', String(s.speed !== 'off'));
+    fast.setAttribute('aria-label', `Print speed: ${s.speed === 'off' ? 'normal' : s.speed}. Tap to change.`);
     const ink = s.free + s.paid;
     this.inkBtn.querySelector('[data-ink]')!.textContent = String(ink);
     this.inkBtn.setAttribute('aria-label', `Ink shop, ${ink} prints left`);
@@ -131,7 +134,7 @@ export class Ui {
     const s = store.state;
     switch (el.dataset.action) {
       case 'print': this.actions.print(); break;
-      case 'fast': store.set({ fast: !store.state.fast }); break;
+      case 'fast': store.set({ speed: SPEEDS[(SPEEDS.indexOf(store.state.speed) + 1) % SPEEDS.length] }); break;
       case 'shop': store.set({ screen: 'shop', soundOpen: false }); break;
       case 'sound': store.set({ soundOpen: !s.soundOpen }); break;
       case 'close': store.set({ screen: 'room', shared: false }); break;

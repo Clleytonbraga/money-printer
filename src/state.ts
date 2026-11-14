@@ -3,6 +3,9 @@ import type { BillRecord, Owner } from './scene/billBatch';
 
 export type Screen = 'room' | 'shop' | 'pay' | 'photo' | 'preview' | 'bill';
 export type PackId = 'small' | 'medium' | 'large';
+export type Speed = 'off' | '1.5x' | '2x' | 'auto';
+/** Each tap on the speed button moves to the next one. */
+export const SPEEDS: Speed[] = ['off', '1.5x', '2x', 'auto'];
 
 export interface Pack {
   id: PackId;
@@ -33,8 +36,8 @@ export interface State {
   count: number;
   pack: PackId;
   soundOpen: boolean;
-  /** The 2x button: the printer feeds paper twice as fast. */
-  fast: boolean;
+  /** The speed button. 'auto' feeds at 2x and keeps printing while there is ink. */
+  speed: Speed;
   sfx: number;
   music: number;
   /** The buyer's photo, while they are in the Large flow. */
@@ -73,7 +76,7 @@ class Store {
     freeResetAt: null,
     pack: 'medium',
     soundOpen: false,
-    fast: false,
+    speed: 'off',
     sfx: 80,
     music: 40,
     photo: null,

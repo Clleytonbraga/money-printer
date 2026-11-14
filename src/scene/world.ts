@@ -82,6 +82,11 @@ export class World {
     this.stage.scene.add(batch.mesh);
   }
 
+  /** Nothing printing and nothing waiting. */
+  get idle(): boolean {
+    return !this.printing && !this.queue.length;
+  }
+
   /** Queue a bill. The printer feeds them one at a time. */
   print(id: number, gold: boolean, owner: Owner | null): void {
     this.queue.push({ id, gold, owner });

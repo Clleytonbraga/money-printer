@@ -46,6 +46,7 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 - `World.seedPile` builds the room from those rows: owner bills and the newest go 3D, the rest is pile height. The newest `fresh.count` bills of everybody start fresh. A tap that hits no 3D bill digs the newest saved bill under that spot back up (`World.dig`), so every bill stays clickable.
 - Tap picks the newest bill among hits within `pile.pickDepth` (crumpled bills poke through each other). The line-of-sight test allows `fresh.clearance` for crumpled bills on the pile.
 - No realtime: other people's bills appear on the next load. Gestures stay local.
+- Speed button cycles 1x → 1.5x → 2x → Auto → 1x (`state.speed`, `World.feed`). Auto feeds at 2x and prints again whenever `World.idle`; it turns itself off when ink runs out or the server is unreachable.
 - Bills without an owner (house bills, plain prints) show a harmless joke name + text from `src/jokes.ts`, picked by bill number. No real people, brands or politics in that list.
 
 ## Not done yet (good next tasks)

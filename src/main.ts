@@ -45,7 +45,7 @@ async function main(): Promise<void> {
       asking = true;
       q = await server(gold ? 'paid' : 'free', { owner: gold ? s.mine?.id : undefined }).catch(() => null);
       asking = false;
-      if (!q) return; // offline: nothing printed, nothing spent
+      if (!q) { store.set({ speed: store.state.speed === 'auto' ? 'off' : store.state.speed }); return; } // offline: nothing printed, nothing spent; auto stops instead of retrying every frame
       if (!q.ok) { store.set({ screen: 'shop', soundOpen: false }); return; }
       s = store.state;
     } else {
@@ -56,7 +56,7 @@ async function main(): Promise<void> {
     world.print(id, gold, gold ? s.mine : null);
   };
 
-  store.subscribe((s) => { world.feed = s.fast ? 2 : 1; });
+  store.subscribe((s) => { world.feed = s.speed === '1.5x' ? 1.5 : s.speed === 'off' ? 1 : 2; });
 
   const ui = new Ui(root, {
     unlock: () => sfx.unlock(),
@@ -155,6 +155,12 @@ async function main(): Promise<void> {
   const loop = (): void => {
     const dt = Math.min(clock.getDelta(), 1 / 20);
     world.update(dt);
+    // Auto: the next bill starts as soon as the printer is free. Out of ink, auto turns itself off.
+    const s = store.state;
+    if (s.speed === 'auto' && s.screen === 'room' && world.idle && !asking) {
+      if (s.free + s.paid > 0) void print();
+      else store.set({ speed: 'off' });
+    }
     stage.render();
     requestAnimationFrame(loop);
   };
