@@ -47,12 +47,13 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 - Tap picks the newest bill among hits within `pile.pickDepth` (crumpled bills poke through each other). The line-of-sight test allows `fresh.clearance` for crumpled bills on the pile.
 - No realtime: other people's bills appear on the next load. Gestures stay local.
 - Music is "Local Forecast – Elevator" by Kevin MacLeod, CC BY 3.0 (`public/assets/music.m4a`, mono AAC from Wikimedia Commons). The license needs the credit line in the sound panel: keep it.
+- **Stripe is live in test mode** (sandbox account "freeart"). Restricted key `rk_test` (one-time payments template) and the webhook secret are Supabase secrets `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`, copies in the Keychain (`stripe-test-secret-key`, `stripe-test-webhook-secret`). Webhook `we_1UbmEs2IVEIgzN9GrXIOonIO` → `stripe-webhook`. The simulated `buy` action is now refused. Real payments need the owner to activate the account and a live key.
 - Speed button cycles 1x → 1.5x → 2x → Auto → 1x (`state.speed`, `World.feed`). Auto feeds at 2x and prints again whenever `World.idle`; it turns itself off when ink runs out or the server is unreachable.
 - Bills without an owner (house bills, plain prints) show a harmless joke name + text from `src/jokes.ts`, picked by bill number. No real people, brands or politics in that list.
 
 ## Not done yet (good next tasks)
 
-1. Real Stripe Checkout: small backend (`/api/checkout`, webhook) — see `src/payments.ts`.
+1. Stripe live mode: owner activates the account; then a live restricted key + live webhook.
 2. Realtime: show other people's prints while the page is open (Supabase Realtime on `bills`).
 3. Photo/text moderation before bills become public.
 4. Realism roadmap in `docs/realismo.md` (PBD paper, table leg occluders, env map from the photo).
