@@ -80,6 +80,8 @@ export const CONFIG = {
     crumple: 0.12,
     /** Tap radius around a fresh bill's centre (CSS px). */
     pickPx: 30,
+    /** How high (m) crumpled bills stick out of the pile surface, for the line-of-sight test. */
+    clearance: 0.03,
     /** A bill that landed out of sight slides toward the camera in steps of this (m)... */
     slideStep: 0.04,
     /** ...and takes about this long to get there (s). */
@@ -156,6 +158,8 @@ export const CONFIG = {
     initialBills: 500,
     /** Portraits on the bills that are already on the floor: one is picked at random per bill. */
     animals: ['🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🦉', '🐧', '🐰', '🐴'],
+    /** A tap opens the newest bill among those this deep (m) under the first one it touches. */
+    pickDepth: 0.03,
     /** Bills kept as real 3D objects. Older ones melt into the pile surface. */
     visualCap: 1100,
   },

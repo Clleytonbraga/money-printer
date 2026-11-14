@@ -29,7 +29,7 @@ export interface State {
   freeResetAt: number | null;
   /** Paid (gold) prints left. */
   paid: number;
-  /** Bills printed by everyone. Replace with the server count. */
+  /** Bills printed by everyone (from the server; the house bills in local dev). */
   count: number;
   pack: PackId;
   soundOpen: boolean;
@@ -46,7 +46,6 @@ export interface State {
   link: string;
   /** What the buyer's gold bills carry once they press Print. */
   mine: Owner | null;
-  mineKey: string | null;
   openBill: BillRecord | null;
   shared: boolean;
 }
@@ -54,12 +53,12 @@ export interface State {
 // v2: the room now starts with fewer bills, so counts saved before that are dropped.
 const SAVE_KEY = 'money-printer:wallet2';
 
-function loadWallet(): Pick<State, 'free' | 'paid' | 'count'> {
+function loadWallet(): Pick<State, 'free' | 'paid'> {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) { const { free, paid } = JSON.parse(raw); return { free, paid }; }
   } catch { /* ignore */ }
-  return { free: CONFIG.freeInk, paid: 0, count: CONFIG.pile.initialBills };
+  return { free: CONFIG.freeInk, paid: 0 };
 }
 
 type Listener = (s: State, prev: State) => void;
@@ -68,6 +67,7 @@ class Store {
   state: State = {
     screen: 'room',
     ...loadWallet(),
+    count: 0,
     freeResetAt: null,
     pack: 'medium',
     soundOpen: false,
@@ -81,7 +81,6 @@ class Store {
     text: '',
     link: '',
     mine: null,
-    mineKey: null,
     openBill: null,
     shared: false,
   };
@@ -95,8 +94,8 @@ class Store {
     const prev = this.state;
     this.state = { ...prev, ...patch };
     try {
-      const { free, paid, count } = this.state;
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ free, paid, count }));
+      const { free, paid } = this.state;
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ free, paid }));
     } catch { /* ignore */ }
     for (const l of this.listeners) l(this.state, prev);
   }

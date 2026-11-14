@@ -184,7 +184,7 @@ export class Ui {
   /** Ink is in the wallet: Large goes on to the photo step, the others back to the room. */
   afterPurchase(id: PackId): void {
     const photo = !!PACKS[id].photo;
-    store.set({ pack: id, mine: photo ? store.state.mine : null, mineKey: photo ? store.state.mineKey : null, screen: photo ? 'photo' : 'room' });
+    store.set({ pack: id, mine: photo ? store.state.mine : null, screen: photo ? 'photo' : 'room' });
   }
 
   private async share(): Promise<void> {

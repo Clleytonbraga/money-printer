@@ -3,6 +3,8 @@ import { CONFIG } from '../config';
 import type { BillBody } from '../physics/billBody';
 
 export interface Owner {
+  /** Server id; also the key of this owner's photo batch. */
+  id: string;
   name: string;
   text: string;
   link: string;

@@ -24,7 +24,7 @@ export async function checkout(pack: Pack): Promise<'paid' | 'redirect' | 'faile
     const r = await call({ device: device(), pack: pack.id, returnTo: location.origin + location.pathname });
     if (typeof r.url === 'string') { location.href = r.url; return 'redirect'; }
     if (!r.simulated) return 'failed';
-    await server('buy', pack.id);
+    await server('buy', { pack: pack.id });
     return 'paid';
   } catch {
     return 'failed';

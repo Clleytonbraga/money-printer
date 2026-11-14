@@ -40,10 +40,17 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 - **Heightfield is 2.5D.** `height(x, z, y)` returns the floor for a point more than `pile.overhang` under a surface (under the table/tray), and the lower level at a `pile.cliff` edge. Always pass `y` from physics code. Contact push-out is capped by `physics.maxPushOut`; uncapped it kicked bills back into the air.
 - Mobile layouts are done: `Stage.layout` (portrait anchors the photo at the bottom, CSS mask fades the top) and the two media queries at the end of `style.css`.
 
+## Rules added on 2026-11-14
+
+- **Bills are global** (`supabase/migrations/004_bills.sql`). Every print is a row in `bills`; its `id` is the bill number and the counter. Visitors read the room with `rpc/list_bills` (one jsonb value; `device` never leaves the server). The 500 house bills (animal portraits) are rows too. Large buyers become `owners` (name/text/link + photo in the public `photos` bucket) through the `owner` action; gold bills carry the owner id. When a printed bill settles, the page reports its seated, visible spot with `place` (once per bill, own device only).
+- `World.seedPile` builds the room from those rows: owner bills and the newest go 3D, the rest is pile height. The newest `fresh.count` bills of everybody start fresh. A tap that hits no 3D bill digs the newest saved bill under that spot back up (`World.dig`), so every bill stays clickable.
+- Tap picks the newest bill among hits within `pile.pickDepth` (crumpled bills poke through each other). The line-of-sight test allows `fresh.clearance` for crumpled bills on the pile.
+- No realtime: other people's bills appear on the next load. Gestures stay local.
+
 ## Not done yet (good next tasks)
 
 1. Real Stripe Checkout: small backend (`/api/checkout`, webhook) — see `src/payments.ts`.
-2. Global counter + shared bills (owner name/text/link/photo) from a backend; seed the pile from it.
+2. Realtime: show other people's prints while the page is open (Supabase Realtime on `bills`).
 3. Photo/text moderation before bills become public.
 4. Realism roadmap in `docs/realismo.md` (PBD paper, table leg occluders, env map from the photo).
 5. Move paid prints to the server with the Stripe webhook (free prints already are).
