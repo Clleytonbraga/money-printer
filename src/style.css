@@ -70,6 +70,10 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
 .steps li { display: flex; }
 .steps .on { font-weight: 600; color: var(--ink); }
 
+.balance { width: 100%; margin-top: 24px; padding: 12px 17px; border-radius: 18px; background: #f5f5f7; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.43; letter-spacing: -0.224px; font-variant-numeric: tabular-nums; }
+.balance .grow { flex-grow: 1; }
+.balance + .packs { margin-top: 12px; }
+.actions { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .packs { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 32px 0; }
 .pack { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 24px; border-radius: 18px; border: 1px solid var(--line); background: #fff; color: var(--ink); text-align: left; }
 .pack.on { padding: 23px; border: 2px solid #0071e3; }
@@ -126,6 +130,9 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
   .lead { font-size: 14px; line-height: 1.43; }
   /* Cartridges as compact tiles: name and price on top, prints and unit price below. */
   .packs { gap: 8px; margin: 10px 0; }
+  .balance { margin-top: 6px; padding: 8px 12px; }
+  .balance + .packs { margin-top: 2px; }
+  .actions { gap: 6px; }
   .pack, .pack.on { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 2px 6px; padding: 12px 16px; }
   .pack.on { padding: 11px 15px; }
   .pack-head { grid-column: 1 / 3; justify-content: flex-start; }
@@ -171,6 +178,8 @@ h1 { margin: 0; font-family: var(--display); font-size: 40px; font-weight: 600; 
   .sound { top: 12px; right: max(24px, env(safe-area-inset-right)); }
   .panel { top: 64px; right: max(24px, env(safe-area-inset-right)); }
   .lead, .box.drop > svg, .hint { display: none; }
+  /* The two buttons share a row, so the balance fits without scrolling. */
+  .actions { flex-direction: row; gap: 12px; }
   /* Narrow tiles: the name and its tag take the first row, the prices stack on the right. */
   .pack-head { grid-column: 1 / -1; }
   .pack-n, .pack .muted { grid-row: 2 / 4; align-self: center; }

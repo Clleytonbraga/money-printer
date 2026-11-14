@@ -246,9 +246,12 @@ export class Ui {
     return `${this.steps(s)}
       <h1 id="dlg-title" tabindex="-1">${ink > 0 ? 'More ink.' : 'Out of ink.'}</h1>
       <p class="lead">The printer needs a new cartridge. With the Large cartridge, your photo goes on the bills.</p>
+      ${ink > 0 ? `<div class="balance" aria-label="Your ink balance">${icons.wallet}<span class="muted">Your ink</span><strong>${ink} ${ink === 1 ? 'print' : 'prints'}</strong><span class="grow"></span><span class="muted">${s.free} free · ${s.paid} paid</span></div>` : ''}
       <div class="packs">${cards}</div>
-      <button class="primary" data-action="to-pay">Refill for ${pack.price}</button>
-      <button class="text" data-action="close">Not now</button>
+      <div class="actions">
+        <button class="primary" data-action="to-pay">Refill for ${pack.price}</button>
+        <button class="text" data-action="close">Not now</button>
+      </div>
       ${s.free <= 0 && s.freeResetAt ? `<p class="muted center">Free ink refills in ${formatWait(s.freeResetAt - performance.now())}.</p>` : ''}
       <p class="small center">Toy money. Ink only buys prints.</p>`;
   }
