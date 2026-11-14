@@ -1,6 +1,6 @@
 import { checkout } from '../payments';
 import { composeBill, GOLD_FILTER, PORTRAIT } from '../scene/billTexture';
-import { formatWait } from '../quota';
+import { formatWait, SERVER, server } from '../quota';
 import { PACKS, store, type PackId, type State } from '../state';
 import { esc, icons } from './icons';
 
@@ -177,9 +177,11 @@ export class Ui {
     btn.textContent = 'Paying…';
     const ok = await checkout(pack);
     if (!ok) { btn.disabled = false; btn.textContent = `Pay ${pack.price}`; return; }
+    // The server keeps the balance; without one (local dev) it stays in the browser.
+    if (SERVER && !(await server('buy', pack.id).catch(() => null))) { btn.disabled = false; btn.textContent = `Pay ${pack.price}`; return; }
     const s = store.state;
     store.set({
-      paid: s.paid + pack.prints,
+      paid: SERVER ? s.paid : s.paid + pack.prints,
       mine: pack.photo ? s.mine : null,
       mineKey: pack.photo ? s.mineKey : null,
       screen: pack.photo ? 'photo' : 'room',

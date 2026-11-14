@@ -6,7 +6,7 @@ import { loadBillArt } from './scene/billTexture';
 import { Stage } from './scene/stage';
 import { World } from './scene/world';
 import type { BillRecord } from './scene/billBatch';
-import { getQuota, SERVER, takeFreePrint, type Quota } from './quota';
+import { SERVER, server } from './quota';
 import { store } from './state';
 import { Ui } from './ui/app';
 
@@ -22,12 +22,10 @@ async function main(): Promise<void> {
   });
   await world.init();
 
-  // Free prints are counted on the server (3 per 24 h per IP and device).
-  const applyQuota = (q: Quota): void =>
-    store.set({ free: q.free, freeResetAt: q.resetIn == null ? null : performance.now() + q.resetIn * 1000 });
-  const refreshQuota = (): void => { if (SERVER) getQuota().then(applyQuota).catch(console.warn); };
-  refreshQuota();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshQuota(); });
+  // Free prints and the paid balance live on the server (see quota.ts).
+  const refresh = (): void => { if (SERVER) server('check').catch(console.warn); };
+  refresh();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
   let asking = false;
   const print = async (): Promise<void> => {
@@ -35,12 +33,11 @@ async function main(): Promise<void> {
     let s = store.state;
     if (s.free + s.paid <= 0) { store.set({ screen: 'shop', soundOpen: false }); return; }
     const gold = s.free <= 0;
-    if (!gold && SERVER) {
+    if (SERVER) {
       asking = true;
-      const q = await takeFreePrint().catch(() => null);
+      const q = await server(gold ? 'paid' : 'free').catch(() => null);
       asking = false;
       if (!q) return; // offline: nothing printed, nothing spent
-      applyQuota(q);
       if (!q.ok) { store.set({ screen: 'shop', soundOpen: false }); return; }
       s = store.state;
     } else {
