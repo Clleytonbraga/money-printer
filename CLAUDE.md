@@ -31,6 +31,10 @@ Copy is English. The owner (Cleyton) speaks Portuguese; reply to him in pt-BR.
 ## Rules added on 2026-11-13
 
 - **Free prints: 3 per rolling 24 h, counted on the server per IP and per device** (`supabase/migrations/001_free_quota.sql`, `supabase/functions/print`, `src/quota.ts`). The device clock is never trusted: the server answers `free` and `resetIn` (seconds). Without `VITE_SUPABASE_URL` the site runs in local test mode (wallet in localStorage, no 24 h rule). Live since 2026-11-14 on the Supabase project `money-printer` (ref `sqyuufrkpzaywpsfxgim`, us-east-1). The public URL and anon key are in `.env.local` (not in git); the local `supabase` shim cannot run `db push`, so SQL goes through the Management API or `npx supabase@latest`.
+- **Paid ink balance** lives on the server per device id (`supabase/migrations/002_wallet.sql`, action `paid`/`buy` of the `print` function, `server()` in `src/quota.ts`). `buy` is a simulated payment anyone can call; the Stripe webhook must replace it.
+- **Fresh bills** (`World.fresh`, `CONFIG.fresh`): the last 8 printed stay in view, on top, flat, and win the pick. They only join the pile height when they stop being fresh.
+- **Bill face** shows `CONFIG.bill.value` + `unit` (200 RAY); the buyer can drag the photo (`panX`/`panY`).
+- UI changes to a modal go to the Claude Design canvas first; the owner edits there before code changes.
 - **Photo on the bill** is engraved, not tinted: `engrave()` in `scene/billTexture.ts`, tunables in `CONFIG.portrait`.
 - **Playing with the bills** (`main.ts` gesture block, `World.sweep/grab/grabMore/moveHeld/drop`, `CONFIG.touch`): tap opens the bill, drag spreads bills and shoves the pile, press-and-hold picks up one bill and then a handful. Local to each visitor until shared bills exist.
 - **Heightfield is 2.5D.** `height(x, z, y)` returns the floor for a point more than `pile.overhang` under a surface (under the table/tray), and the lower level at a `pile.cliff` edge. Always pass `y` from physics code. Contact push-out is capped by `physics.maxPushOut`; uncapped it kicked bills back into the air.
